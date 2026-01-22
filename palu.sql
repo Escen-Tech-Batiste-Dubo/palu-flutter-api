@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '803cb25c-9e08-11f0-b302-596d1936c32f:1-606';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '803cb25c-9e08-11f0-b302-596d1936c32f:1-607';
 
 --
 -- Table structure for table `users`
@@ -32,7 +32,7 @@ DROP TABLE IF EXISTS `users`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `email` varchar(256) DEFAULT NULL,
+  `email` varchar(256) NOT NULL,
   `password` varchar(512) NOT NULL,
   `username` varchar(256) NOT NULL,
   `nickname` varchar(256) NOT NULL,
@@ -85,4 +85,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-22 16:28:57
+-- Dump completed on 2026-01-22 18:17:07
