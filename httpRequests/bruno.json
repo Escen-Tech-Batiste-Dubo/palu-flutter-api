@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "palu-flutter-api",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
