@@ -1,0 +1,26 @@
+meta {
+  name: register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "john.doe@domain.com",
+    "password": "1234567890",
+    "username": "johndoe",
+    "nickname": "John Doe",
+    "bio": "Hello World !"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
