@@ -40,6 +40,6 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ghcr.io/escen-tech-batiste-dubo/palu-flutter-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
