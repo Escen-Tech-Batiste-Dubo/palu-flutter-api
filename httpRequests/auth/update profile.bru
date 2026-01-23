@@ -1,0 +1,27 @@
+meta {
+  name: update profile
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{url}}/auth/profile
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nickname": "Johnnnn",
+    "bio": "Hello, World!"
+  }
+}
+
+body:form-urlencoded {
+  nickname: Johhnnnnn
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

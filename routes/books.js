@@ -3,46 +3,43 @@ import transformGoogleBook from "../utils/transformGoogleBook.js";
 
 const booksRouter = Router();
 
-booksRouter.get('/', (req, res) => {
-  const searchTerm = req.query.q;
+booksRouter.get('/', async (req, res) => {
+  try {
+    const searchTerm = req.query.q;
 
-  if (!searchTerm) {
-    return res.status(400).json({ error: 'Search term is required' });
+    if (!searchTerm) {
+      return res.status(400).json({ error: 'Search term is required' });
+    }
+
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchTerm)}`);
+    const data = await response.json();
+
+    if (!data.items || data.items.length === 0) {
+      return res.json({ books: [] });
+    }
+    const books = data.items.map(book => transformGoogleBook(book));
+    res.json({ books });
+  } catch (error) {
+    console.error('Error searching books:', error);
+    res.status(500).json({ error: 'Failed to search books' });
   }
-
-  fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchTerm)}`)
-    .then(response => response.json())
-    .then(data => {
-      if (!data.items || data.items.length === 0) {
-        return res.json({ books: [] });
-      }
-      const books = data.items.map(book => transformGoogleBook(book));
-      res.json({ books });
-    })
-    .catch(error => {
-      console.error('Error searching books:', error);
-      res.status(500).json({ error: 'Failed to search books' });
-    });
 })
 
-booksRouter.get('/:id', (req, res) => {
-  const id = req.params.id;
+booksRouter.get('/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
 
-  fetch(`https://www.googleapis.com/books/v1/volumes/${id}`)
-    .then(response => {
-      if (!response.ok) {
-        return res.status(404).json({ error: 'Book not found' });
-      }
-      return response.json();
-    })
-    .then(data => {
-      const book = transformGoogleBook(data);
-      res.json({ book });
-    })
-    .catch(error => {
-      console.error('Error fetching book:', error);
-      res.status(500).json({ error: 'Failed to fetch book' });
-    });
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes/${id}`);
+    if (!response.ok) {
+      return res.status(404).json({ error: 'Book not found' });
+    }
+    const data = await response.json();
+    const book = transformGoogleBook(data);
+    res.json({ book });
+  } catch (error) {
+    console.error('Error fetching book:', error);
+    res.status(500).json({ error: 'Failed to fetch book' });
+  }
 })
 
 export default booksRouter;

@@ -18,10 +18,27 @@ SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
 SET @@SESSION.SQL_LOG_BIN= 0;
 
 --
--- GTID state at the beginning of the backup 
+-- Table structure for table `books`
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '803cb25c-9e08-11f0-b302-596d1936c32f:1-610';
+DROP TABLE IF EXISTS `books`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `books` (
+  `id` varchar(256) NOT NULL,
+  `title` varchar(256) NOT NULL,
+  `authors` varchar(256) DEFAULT NULL,
+  `publisher` varchar(256) DEFAULT NULL,
+  `published_date` varchar(256) DEFAULT NULL,
+  `description` text,
+  `isbn13` varchar(256) DEFAULT NULL,
+  `page_count` int DEFAULT NULL,
+  `categories` varchar(512) DEFAULT NULL,
+  `language` varchar(10) DEFAULT NULL,
+  `images` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `users`
@@ -38,18 +55,8 @@ CREATE TABLE `users` (
   `nickname` varchar(256) NOT NULL,
   `bio` text,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `users`
---
-
-LOCK TABLES `users` WRITE;
-/*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'john.doe@domain.com','$2b$10$jY4QD7NcE6kkLHc92cLxo.JiuKNstBRzkn9GqkvMx.8/R0bgh984i','johndoe','John Doe',''),(2,'john.do@domain.com','$2b$10$lLfm/YlZbhex9husKCS3jOPShEFDne9AqdMk36MKk1k2sLF7Wzv0O','johndo','John Doe','Hello World !');
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `users_books`
@@ -59,24 +66,16 @@ DROP TABLE IF EXISTS `users_books`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users_books` (
-  `book_id` int NOT NULL,
+  `book_id` varchar(256) NOT NULL,
   `user_id` int NOT NULL,
   `status` enum('WISHLIST','POSSESSION') DEFAULT NULL,
   `current_page` int DEFAULT NULL,
   PRIMARY KEY (`book_id`,`user_id`),
   KEY `users_books_users_id_fk` (`user_id`),
+  CONSTRAINT `users_books_books_id_fk` FOREIGN KEY (`book_id`) REFERENCES `books` (`id`) ON DELETE CASCADE,
   CONSTRAINT `users_books_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `users_books`
---
-
-LOCK TABLES `users_books` WRITE;
-/*!40000 ALTER TABLE `users_books` DISABLE KEYS */;
-/*!40000 ALTER TABLE `users_books` ENABLE KEYS */;
-UNLOCK TABLES;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -88,4 +87,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-22 19:07:14
+-- Dump completed on 2026-01-23 13:20:45

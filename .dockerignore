@@ -12,6 +12,7 @@
 
 # Database dumps and scripts
 palu.sql
+profile_pictures
 
 # Development and testing tools
 httpRequests

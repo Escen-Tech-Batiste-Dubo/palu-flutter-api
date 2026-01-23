@@ -1,0 +1,20 @@
+meta {
+  name: save profile photo
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{url}}/auth/profile-picture
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  profilePicture: @file(/Users/batiste/Downloads/Design sans titre.png)
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

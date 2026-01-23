@@ -20,6 +20,10 @@ body:json {
   }
 }
 
+vars:post-response {
+  token: res.body["token"]
+}
+
 settings {
   encodeUrl: true
   timeout: 0

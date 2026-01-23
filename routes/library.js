@@ -1,56 +1,32 @@
-import {Router} from "express";
+import { Router } from "express";
 import database from '../configuration/database.js';
-import jwt from "jsonwebtoken";
+import authenticateToken from '../middleware/authenticateToken.js';
 import transformGoogleBook from '../utils/transformGoogleBook.js';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+
 
 const libraryRouter = Router()
 
-libraryRouter.get('/', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid authorization header' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  let decoded;
+libraryRouter.get('/', authenticateToken, async (req, res) => {
   try {
-    decoded = jwt.verify(token, JWT_SECRET);
+    const userId = req.user.id;
+    const [books] = await database.query('SELECT books.id, books.title, books.authors, books.publisher, books.published_date, books.description, books.isbn13, books.page_count, books.categories, books.language, books.images, users_books.status, users_books.current_page FROM books LEFT JOIN users_books ON books.id = users_books.book_id WHERE users_books.user_id = ?', [userId]);
+    res.json({
+      books: books.map(book => ({
+        ...book,
+        authors: book.authors ? JSON.parse(book.authors) : [],
+        categories: book.categories ? JSON.parse(book.categories) : [],
+        images: book.images ? JSON.parse(book.images) : {},
+      }))
+    });
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    console.error('Error fetching user library:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  const userId = decoded.id;
-  const [books] = await database.query('SELECT books.id, books.title, books.authors, books.publisher, books.published_date, books.description, books.isbn13, books.page_count, books.categories, books.language, books.images, users_books.status, users_books.current_page FROM books LEFT JOIN users_books ON books.id = users_books.book_id WHERE users_books.user_id = ?', [userId]);
-  res.json({
-    books: books.map(book => ({
-      ...book,
-      authors: book.authors ? JSON.parse(book.authors) : [],
-      categories: book.categories ? JSON.parse(book.categories) : [],
-      images: book.images ? JSON.parse(book.images) : {},
-    }))
-  });
 })
 
-libraryRouter.post('/:id', async (req, res) => {
+libraryRouter.post('/:id', authenticateToken, async (req, res) => {
   try {
-    // 1. Validate token
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Missing or invalid authorization header' });
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    // 2. Verify JWT token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET);
-    } catch (error) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-
     // 3. Validate request body
     const { status, current_page } = req.body;
     if (!status) {
@@ -64,7 +40,7 @@ libraryRouter.post('/:id', async (req, res) => {
 
     const currentPage = current_page || 0;
     const bookId = req.params.id;
-    const userId = decoded.id;
+    const userId = req.user.id;
 
     // 4. Check if book exists in database
     const [existingBooks] = await database.query('SELECT id FROM books WHERE id = ?', [bookId]);
@@ -107,85 +83,68 @@ libraryRouter.post('/:id', async (req, res) => {
       if (error.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({ error: 'This book is already in your library' });
       }
-      throw error;
+      console.error('Error adding book to library:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   } catch (error) {
-    console.error('Error in POST /books/:id:', error);
+    console.error('Error in POST /library/:id:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 })
 
-libraryRouter.put('/:id', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid authorization header' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  let decoded;
+libraryRouter.put('/:id', authenticateToken, async (req, res) => {
   try {
-    decoded = jwt.verify(token, JWT_SECRET);
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
+    const bookId = req.params.id;
+    const userId = req.user.id;
+    let { status, current_page } = req.body;
 
-  const bookId = req.params.id;
-  const userId = decoded.id;
-  let { status, current_page } = req.body;
-
-  if (status === 'WISHLIST' && current_page) {
-    current_page = 0
-  }
-
-  // check that current_page is a non-negative integer and less than or equal to page_count
-  if (current_page !== undefined) {
-    if (!Number.isInteger(current_page) || current_page < 0) {
-      return res.status(400).json({error: 'Current page must be a non-negative integer'});
+    if (status === 'WISHLIST' && current_page) {
+      current_page = 0
     }
 
-    let [book] = await database.query('SELECT page_count FROM books WHERE id = ?', [bookId]);
-    if (current_page > book.page_count) {
-      return res.status(400).json({error: 'Current page cannot be greater than total page count'});
-    }
-  }
-
-  database.query('UPDATE users_books SET status = ?, current_page = ? WHERE user_id = ? AND book_id = ?', [status, current_page, userId, bookId])
-    .then(([result]) => {
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: 'Book not found in your library' });
+    // check that current_page is a non-negative integer and less than or equal to page_count
+    if (current_page !== undefined) {
+      if (!Number.isInteger(current_page) || current_page < 0) {
+        return res.status(400).json({ error: 'Current page must be a non-negative integer' });
       }
-      res.json({ message: 'Book updated in your library', bookId, status, current_page });
-    })
-    .catch((error) => {
-      console.error('Error updating book in library:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    })
+
+      const [books] = await database.query('SELECT page_count FROM books WHERE id = ?', [bookId]);
+      if (books.length === 0) {
+        return res.status(404).json({ error: 'Book not found' });
+      }
+
+      if (current_page > books[0].page_count) {
+        return res.status(400).json({ error: 'Current page cannot be greater than total page count' });
+      }
+    }
+
+    const [result] = await database.query('UPDATE users_books SET status = ?, current_page = ? WHERE user_id = ? AND book_id = ?', [status, current_page, userId, bookId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Book not found in your library' });
+    }
+    res.json({ message: 'Book updated in your library', bookId, status, current_page });
+  } catch (error) {
+    console.error('Error updating book in library:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 })
 
-libraryRouter.delete('/:id', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid authorization header' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  let decoded;
+libraryRouter.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    decoded = jwt.verify(token, JWT_SECRET);
+    const bookId = req.params.id;
+    const userId = req.user.id;
+
+    const [result] = await database.query('DELETE FROM users_books WHERE user_id = ? AND book_id = ?', [userId, bookId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Book not found in your library' });
+    }
+    res.json({ message: 'Book removed from your library', bookId });
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    console.error('Error deleting book from library:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  const bookId = req.params.id;
-  const userId = decoded.id;
-
-  database.query('DELETE FROM users_books WHERE user_id = ? AND book_id = ?', [userId, bookId])
-    .then(([result]) => {
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: 'Book not found in your library' });
-      }
-      res.json({ message: 'Book removed from your library', bookId });
-    })
 })
 
 export default libraryRouter;
