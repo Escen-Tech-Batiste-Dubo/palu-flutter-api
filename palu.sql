@@ -21,7 +21,7 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '803cb25c-9e08-11f0-b302-596d1936c32f:1-607';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '803cb25c-9e08-11f0-b302-596d1936c32f:1-610';
 
 --
 -- Table structure for table `users`
@@ -38,7 +38,7 @@ CREATE TABLE `users` (
   `nickname` varchar(256) NOT NULL,
   `bio` text,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -47,6 +47,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (1,'john.doe@domain.com','$2b$10$jY4QD7NcE6kkLHc92cLxo.JiuKNstBRzkn9GqkvMx.8/R0bgh984i','johndoe','John Doe',''),(2,'john.do@domain.com','$2b$10$lLfm/YlZbhex9husKCS3jOPShEFDne9AqdMk36MKk1k2sLF7Wzv0O','johndo','John Doe','Hello World !');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -62,7 +63,9 @@ CREATE TABLE `users_books` (
   `user_id` int NOT NULL,
   `status` enum('WISHLIST','POSSESSION') DEFAULT NULL,
   `current_page` int DEFAULT NULL,
-  PRIMARY KEY (`book_id`,`user_id`)
+  PRIMARY KEY (`book_id`,`user_id`),
+  KEY `users_books_users_id_fk` (`user_id`),
+  CONSTRAINT `users_books_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -85,4 +88,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-22 18:17:07
+-- Dump completed on 2026-01-22 19:07:14
