@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import transformGoogleBook from "../utils/transformGoogleBook.js";
 
+const API_KEY = process.env.API_KEY;
+
 const booksRouter = Router();
 
 booksRouter.get('/', async (req, res) => {
@@ -11,8 +13,13 @@ booksRouter.get('/', async (req, res) => {
       return res.status(400).json({ error: 'Search term is required' });
     }
 
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchTerm)}`);
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchTerm)}&key=${API_KEY}`);
     const data = await response.json();
+
+    if (!response.ok) {
+      console.error(response)
+      throw new Error('Failed to fetch books');
+    }
 
     if (!data.items || data.items.length === 0) {
       return res.json({ books: [] });
@@ -29,8 +36,9 @@ booksRouter.get('/:id', async (req, res) => {
   try {
     const id = req.params.id;
 
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes/${id}`);
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes/${id}?key=${API_KEY}`);
     if (!response.ok) {
+      console.error(response)
       return res.status(404).json({ error: 'Book not found' });
     }
     const data = await response.json();
