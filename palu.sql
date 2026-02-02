@@ -35,6 +35,8 @@ CREATE TABLE `users` (
   `username` varchar(256) NOT NULL,
   `nickname` varchar(256) NOT NULL,
   `bio` text,
+  `login_attempt` int DEFAULT 0,
+  `last_login_attempt` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
 

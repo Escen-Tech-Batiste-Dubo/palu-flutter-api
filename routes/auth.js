@@ -74,11 +74,19 @@ authRouter.post('/login', async (req, res) => {
     }
 
     const user = users[0];
+
+    if (user.login_attempt % 3 === 0 && user.last_login_attempt > new Date(Date.now() - 1000 * 5)) {
+      return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+    }
+
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
+      await database.query('UPDATE users SET login_attempt = login_attempt + 1, last_login_attempt = ? WHERE id = ?', [new Date(), user.id]);
       return res.status(401)
         .json({ error: 'Invalid credentials' });
     }
+
+    await database.query('UPDATE users SET login_attempt = 0 WHERE id = ?', [user.id]);
 
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '90d' });
     user.password = undefined;
