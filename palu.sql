@@ -37,6 +37,7 @@ CREATE TABLE `users` (
   `bio` text,
   `login_attempt` int DEFAULT 0,
   `last_login_attempt` datetime DEFAULT NULL,
+  `role` enum('USER','ADMIN','SUPERADMIN') DEFAULT 'USER',
   PRIMARY KEY (`id`)
 );
 

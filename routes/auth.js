@@ -35,8 +35,8 @@ authRouter.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
     const [result] = await database.query(
-      'INSERT INTO users (email, password, username, nickname, bio) VALUES (?, ?, ?, ?, ?)',
-      [email, hashedPassword, username, nickname, bio || '']
+      'INSERT INTO users (email, password, username, nickname, bio, role) VALUES (?, ?, ?, ?, ?, ?)',
+      [email, hashedPassword, username, nickname, bio || '', 'USER']
     );
 
     const user = { id: result.insertId, email, username, nickname, bio: bio || '' };
@@ -75,7 +75,7 @@ authRouter.post('/login', async (req, res) => {
 
     const user = users[0];
 
-    if (user.login_attempt % 3 === 0 && user.last_login_attempt > new Date(Date.now() - 1000 * 5)) {
+    if (user.login_attempt % 3 === 0 && user.last_login_attempt > new Date(Date.now() - 1000 * 60 * 5)) {
       return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
     }
 
@@ -90,6 +90,8 @@ authRouter.post('/login', async (req, res) => {
 
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '90d' });
     user.password = undefined;
+    user.last_login_attempt = undefined;
+    user.login_attempt = undefined;
     return res.json({ user: user, token: token });
   } catch (error) {
     console.error('Error logging in user:', error);
@@ -99,7 +101,7 @@ authRouter.post('/login', async (req, res) => {
 })
 
 authRouter.get('/me', authenticateToken, (req, res) => {
-  const { password ,iat, exp, ...user } = req.user;
+  const { password ,iat, exp, login_attempt, last_login_attempt, ...user } = req.user;
   res.json({ user: user });
 })
 
