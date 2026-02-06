@@ -120,6 +120,11 @@ Ou avec le username :
 }
 ```
 
+**Validations :**
+- Email ou username requis
+- Mot de passe requis
+- Système de rate limiting : après 3 tentatives échouées, un délai de 5 minutes est appliqué avant la prochaine tentative
+
 **Réponse (200) :**
 ```json
 {
@@ -128,7 +133,8 @@ Ou avec le username :
     "email": "user@example.com",
     "username": "johndoe",
     "nickname": "John",
-    "bio": "I love reading"
+    "bio": "I love reading",
+    "role": "USER"
   },
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
@@ -137,6 +143,7 @@ Ou avec le username :
 **Erreurs :**
 - `400` : Champs manquants
 - `401` : Identifiants invalides
+- `429` : Trop de tentatives échouées, réessayez plus tard
 - `500` : Erreur serveur
 
 ---
@@ -155,7 +162,8 @@ Authorization: Bearer <token>
     "email": "user@example.com",
     "username": "johndoe",
     "nickname": "John",
-    "bio": "I love reading"
+    "bio": "I love reading",
+    "role": "USER"
   }
 }
 ```
@@ -180,7 +188,11 @@ Authorization: Bearer <token>
 }
 ```
 
-**Note :** Email et username ne peuvent pas être modifiés.
+**Validations :**
+- Au moins un champ (nickname ou bio) requis
+- `nickname` : max 50 caractères, ne peut pas être vide
+- `bio` : max 500 caractères
+- Email et username ne peuvent pas être modifiés
 
 **Réponse (200) :**
 ```json
@@ -197,7 +209,7 @@ Authorization: Bearer <token>
 ```
 
 **Erreurs :**
-- `400` : Au moins un champ (nickname ou bio) requis, validations de format
+- `400` : Champs invalides ou aucun champ fourni
 - `401` : Token invalide ou absent
 - `404` : Utilisateur non trouvé
 - `500` : Erreur serveur
@@ -248,7 +260,7 @@ Content-Type: multipart/form-data
 ```
 
 **Body (form-data) :**
-- `profilePicture` : Fichier image (JPG, PNG, etc.)
+- `profilePicture` : Fichier image (JPG, PNG, WebP, etc.)
 
 **Réponse (200) :**
 ```json
@@ -262,7 +274,9 @@ Content-Type: multipart/form-data
 **Notes :**
 - L'image est sauvegardée dans `/profile_pictures` avec le nom `{userId}.{extension}`
 - Si une image existe déjà pour cet utilisateur, elle est supprimée
-- L'image est accessible à l'URL `/profile_pictures/{userId}.{extension}`
+- L'image est accessible à l'URL `/profile_pictures/{fileName}`
+- Les dimensions recommandées : minimum 200x200px
+- Formats acceptés : JPG, PNG, WebP, GIF
 
 **Erreurs :**
 - `400` : Aucun fichier fourni
@@ -280,7 +294,7 @@ GET /auth/profile-picture/:userId
 - `userId` : ID de l'utilisateur (numérique)
 
 **Réponse (200) :**
-- Retourne le fichier image
+- Retourne le fichier image avec les headers appropriés
 
 **Erreurs :**
 - `400` : ID utilisateur invalide
@@ -291,7 +305,7 @@ GET /auth/profile-picture/:userId
 
 ### 📖 Livres (`/books`)
 
-#### 1. Rechercher des livres
+#### 1. Rechercher des livres via Google Books API
 ```
 GET /books?q=search_term
 ```
@@ -323,13 +337,56 @@ GET /books?q=search_term
 }
 ```
 
+**Notes :**
+- Les résultats sont sauvegardés en base de données pour optimiser les recherches futures
+- Si la limite de requêtes Google Books API est atteinte (429 Too Many Requests), les données en cache seront utilisées
+
 **Erreurs :**
 - `400` : Paramètre `q` manquant
 - `500` : Erreur lors de la recherche
 
 ---
 
-#### 2. Récupérer un livre par ID
+#### 2. Rechercher des livres dans la base de données locale
+```
+GET /books/search?q=search_term
+```
+
+**Paramètres Query :**
+- `q` (requis) : Terme de recherche dans le titre des livres
+
+**Réponse (200) :**
+```json
+{
+  "books": [
+    {
+      "id": "uBLfNAEACAAJ",
+      "title": "Harry Potter and the Philosopher's Stone",
+      "authors": ["J. K. Rowling"],
+      "publisher": "Bloomsbury",
+      "description": "...",
+      "pageCount": 223,
+      "publishedDate": "1997-06-26",
+      "isbn13": "978-0747532699",
+      "categories": ["Juvenile Fiction"],
+      "language": "en",
+      "images": { "thumbnail": "...", "small": "..." }
+    }
+  ]
+}
+```
+
+**Notes :**
+- Cette route recherche uniquement dans les livres présents en base de données locale
+- Plus rapide que la recherche Google Books API
+
+**Erreurs :**
+- `400` : Paramètre `q` manquant
+- `500` : Erreur lors de la recherche
+
+---
+
+#### 3. Récupérer un livre par ID
 ```
 GET /books/:id
 ```
@@ -358,6 +415,10 @@ GET /books/:id
   }
 }
 ```
+
+**Notes :**
+- Vérifie d'abord la base de données locale
+- Si non trouvé localement, interroge l'API Google Books
 
 **Erreurs :**
 - `404` : Livre non trouvé
