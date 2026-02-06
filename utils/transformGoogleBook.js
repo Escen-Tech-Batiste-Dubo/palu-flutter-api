@@ -6,7 +6,7 @@ const transformGoogleBook = (data) => ({
   publishedDate: data.volumeInfo.publishedDate,
   description: data.volumeInfo.description || 'No description available',
   isbn13: data.volumeInfo.industryIdentifiers ? data.volumeInfo.industryIdentifiers.find(id => id.type === 'ISBN_13')?.identifier : 'N/A',
-  pageCount: data.volumeInfo.pageCount || 'N/A',
+  pageCount: data.volumeInfo.pageCount || 0,
   categories: data.volumeInfo.categories || ['Uncategorized'],
   language: data.volumeInfo.language || 'N/A',
   images: {

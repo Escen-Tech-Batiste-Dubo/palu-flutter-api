@@ -3,8 +3,6 @@ import database from '../configuration/database.js';
 import authenticateToken from '../middleware/authenticateToken.js';
 import transformGoogleBook from '../utils/transformGoogleBook.js';
 
-
-
 const libraryRouter = Router()
 
 libraryRouter.get('/', authenticateToken, async (req, res) => {

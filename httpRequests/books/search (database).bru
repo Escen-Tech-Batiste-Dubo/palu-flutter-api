@@ -1,0 +1,20 @@
+meta {
+  name: search (database)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{url}}/books/search?q=harry+potter+a+l+ecole+des+sorciers
+  body: none
+  auth: inherit
+}
+
+params:query {
+  q: harry+potter+a+l+ecole+des+sorciers
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

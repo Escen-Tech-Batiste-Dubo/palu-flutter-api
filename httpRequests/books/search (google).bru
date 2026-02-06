@@ -1,17 +1,17 @@
 meta {
-  name: search
+  name: search (google)
   type: http
   seq: 1
 }
 
 get {
-  url: {{url}}/books?q=le+hobbit
+  url: {{url}}/books?q=harry+potter+a+l+ecole+des+sorciers
   body: none
   auth: inherit
 }
 
 params:query {
-  q: le+hobbit
+  q: harry+potter+a+l+ecole+des+sorciers
 }
 
 settings {
